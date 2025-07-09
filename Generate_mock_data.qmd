@@ -1,0 +1,110 @@
+---
+title: "Excample of generating mock data using PHIAT-YLL files"
+author: "Juan Li"
+date: 2025-07-02
+format: 
+  html:
+    toc: true
+    html-math-method: katex
+    css: styles.css
+editor: visual
+---
+
+Some resources:
+
+https://stirlingcodingclub.github.io/simulating_data/index.html https://cran.r-project.org/web/packages/simstudy/vignettes/simstudy.html
+
+```{r}
+#| warning: false
+#| message: false
+#| output: false
+
+library(dplyr)       # Data manipulation
+library(stringr)     # Working with strings
+#library(simstudy)    # Generate simulated data sets: https://cran.r-project.org/web/packages/simstudy/vignettes/simstudy.html
+
+# source helper functions
+
+```
+
+## Read in variable and variable_details sheet
+
+```{r}
+variables <- read.csv("Worksheets/phiatyll_variables.csv", header = T, check.names=FALSE, na.strings=c("","NA","N/A")) # PHIAT-YLL variables
+variable_details_c <- read.csv("Worksheets/cchsflow-variable-details.csv", header = T, check.names=FALSE, na.strings=c("","NA","N/A"))  # CCHS variable details
+variable_details_p <- read.csv("Worksheets/phiatyll_variables_details.csv", header = T, check.names=FALSE, na.strings=c("","NA","N/A")) # additional PHIAT-YLL variable details
+
+variable_details <- bind_rows(variable_details_c, variable_details_p) %>% 
+  filter(variable %in% variables$variable)
+```
+
+## Get variable names of each type
+
+```{r}
+# --- derived variables ---
+var_derived <- unique(variable_details[str_detect(variable_details$variableStart, "DerivedVar::"), "variable"])
+
+# --- original variables ---
+# categorical variables
+var_cat <- unique(variables[variables$variableType == "Categorical", "variable"])
+var_cat <- var_cat[!(var_cat %in% var_derived)] # remove derived variable
+  
+# continuous variables
+var_con <- unique(variables[variables$variableType == "Continuous", "variable"])
+var_con <- var_con[!(var_con %in% var_derived)] # remove derived variable
+
+# check
+nrow(variables) == length(var_derived) + length(var_cat) + length(var_con)
+```
+
+## 1. Generate mock data of original variables
+
+### Categorical variables
+
+```{r}
+for (var in var_cat) {
+  labels <- variable_details[variable_details$variable == var, ""]
+}
+```
+
+### Continuous variables
+
+```{r}
+
+```
+
+## 2. Generate mock data of derived variables
+
+```{r}
+
+```
+
+## 3. Optional: further manipulate data
+
+### Add missing data
+
+```{r}
+
+```
+
+### Add spoiled data
+
+```{r}
+
+```
+
+## 4. Add info from Table 1
+
+```{r}
+
+```
+
+## 5. Add info from correlation matrix
+
+```{r}
+
+```
+
+```{r}
+
+```
