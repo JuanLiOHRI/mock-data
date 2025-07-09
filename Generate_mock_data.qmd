@@ -1,5 +1,5 @@
 ---
-title: "Excample of generating mock data using PHIAT-YLL files"
+title: "Excample of generating mock data using PHIAT-YLL files based on variable and variable-details sheets"
 author: "Juan Li"
 date: 2025-07-02
 format: 
@@ -12,7 +12,7 @@ editor: visual
 
 Some resources:
 
-https://stirlingcodingclub.github.io/simulating_data/index.html https://cran.r-project.org/web/packages/simstudy/vignettes/simstudy.html
+<https://kgoldfeld.github.io/simstudy/>
 
 ```{r}
 #| warning: false
@@ -30,28 +30,45 @@ library(stringr)     # Working with strings
 ## Read in variable and variable_details sheet
 
 ```{r}
+# PHIAT-YLL variables
 variables <- read.csv("Worksheets/phiatyll_variables.csv", header = T, check.names=FALSE, na.strings=c("","NA","N/A")) # PHIAT-YLL variables
-variable_details_c <- read.csv("Worksheets/cchsflow-variable-details.csv", header = T, check.names=FALSE, na.strings=c("","NA","N/A"))  # CCHS variable details
-variable_details_p <- read.csv("Worksheets/phiatyll_variables_details.csv", header = T, check.names=FALSE, na.strings=c("","NA","N/A")) # additional PHIAT-YLL variable details
+# CCHS variable details
+variable_details_c <- read.csv("Worksheets/cchsflow-variable-details.csv", header = T, check.names=FALSE, na.strings=c("","NA","N/A"))  
+# additional PHIAT-YLL variable details
+variable_details_p <- read.csv("Worksheets/phiatyll_variables_details.csv", header = T, check.names=FALSE, na.strings=c("","NA","N/A")) 
 
 variable_details <- bind_rows(variable_details_c, variable_details_p) %>% 
   filter(variable %in% variables$variable)
+```
+
+## Get required cycles
+
+```{r}
+cycles <- sort(unique(unlist(str_split(paste(variables$databaseStart, collapse = ","), ","))))
+(cycles <- cycles[str_detect(cycles, "cchs")])
 ```
 
 ## Get variable names of each type
 
 ```{r}
 # --- derived variables ---
-var_derived <- unique(variable_details[str_detect(variable_details$variableStart, "DerivedVar::"), "variable"])
+var_derived <- unique(variable_details[str_detect(variable_details$variableStart, "DerivedVar::") |
+  str_detect(variable_details$variable, "_der"), "variable"])
+print("--- Derived variables: ---")
+print(var_derived)
 
 # --- original variables ---
 # categorical variables
 var_cat <- unique(variables[variables$variableType == "Categorical", "variable"])
 var_cat <- var_cat[!(var_cat %in% var_derived)] # remove derived variable
-  
+print("--- Categorical variables: ---")
+print(var_cat)
+
 # continuous variables
 var_con <- unique(variables[variables$variableType == "Continuous", "variable"])
 var_con <- var_con[!(var_con %in% var_derived)] # remove derived variable
+print("--- Continuous variables: ---")
+print(var_con)
 
 # check
 nrow(variables) == length(var_derived) + length(var_cat) + length(var_con)
@@ -62,8 +79,16 @@ nrow(variables) == length(var_derived) + length(var_cat) + length(var_con)
 ### Categorical variables
 
 ```{r}
-for (var in var_cat) {
-  labels <- variable_details[variable_details$variable == var, ""]
+length <- 5
+
+df_cat <- data.frame()
+for (cycle in cycles) {
+  df_i <- data.frame(cycle = rep(cycle, length))
+  for (var in var_cat) {
+    col <- create_cat_var(var, cycle, variable_details, length)
+    df_i <- bind_cols(df_i, col)
+  }
+  df_cat <- bind_rows(df_cat, df_i)
 }
 ```
 
