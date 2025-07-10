@@ -114,6 +114,13 @@ for (cycle in cycles) {
 df <- bind_cols(df_cat, df_con[, !(names(df_con) %in% names(df_cat))])
 ```
 
+```{r}
+# check
+df_2003 <- df %>% filter(cycle == cycles[1])
+nNA <- colSums(is.na(df_2003))
+df_2003[, nNA == 0]
+```
+
 ## 2. Generate mock data of derived variables
 
 ```{r}
