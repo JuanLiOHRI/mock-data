@@ -24,7 +24,9 @@ library(stringr)     # Working with strings
 #library(simstudy)    # Generate simulated data sets: https://cran.r-project.org/web/packages/simstudy/vignettes/simstudy.html
 
 # source helper functions
-
+source("R/create_cat_var.R")
+source("R/create_con_var.R")
+source("R/util.R")
 ```
 
 ## Read in variable and variable_details sheet
@@ -45,7 +47,7 @@ variable_details <- bind_rows(variable_details_c, variable_details_p) %>%
 
 ```{r}
 cycles <- sort(unique(unlist(str_split(paste(variables$databaseStart, collapse = ","), ","))))
-(cycles <- cycles[str_detect(cycles, "cchs")])
+(cycles <- str_trim(cycles[str_detect(cycles, "cchs")]))
 ```
 
 ## Get variable names of each type
@@ -95,7 +97,21 @@ for (cycle in cycles) {
 ### Continuous variables
 
 ```{r}
+df_con <- data.frame()
+for (cycle in cycles) {
+  df_i <- data.frame(cycle = rep(cycle, length))
+  for (var in var_con) {
+    col <- create_con_var(var, cycle, variable_details, length, type = "uniform")
+    df_i <- bind_cols(df_i, col)
+  }
+  df_con <- bind_rows(df_con, df_i)
+}
+```
 
+### combine
+
+```{r}
+df <- bind_cols(df_cat, df_con)
 ```
 
 ## 2. Generate mock data of derived variables

@@ -1,38 +1,18 @@
-#' Create categorical variables based on variable and variable-details sheets
+#' @description This function creates categorical variables based on specifications from `variable` and `variable-details` sheets.
 #'
-#' This function generates a mock categorical variable based on specifications from
-#' a variable details dataframe. It handles both regular categories and NA categories,
-#' including those defined as ranges.
-#'
-#' @param var A character string specifying the variable name to create.
-#' @param cycle A character string indicating the cycle (e.g., "CCHS2001", "CCHS2003") to filter
-#'   `variable_details` by.
-#' @param variable_details A data frame containing variable specifications, typically
-#'   with columns like `variable`, `databaseStart`, `variableStart`, `recStart`, and `recEnd`.
-#' @param length An integer specifying the desired length of the generated categorical variable.
-#' @param has_NA A logical value. If TRUE, NA levels defined in `variable_details` will be
-#'   included in the sampling. Defaults to FALSE.
-#' @param seed An integer for setting the random seed to ensure reproducibility. Defaults to 100.
-#'
-#' @return A data frame with a single column containing the generated
-#'   categorical variable.
-#'
+#' @param var string. The variable name to be created.
+#' @param cycle string. The cycle to which the variable belongs (e.g., "CCHS2001").
+#' @param variable_details data.frame. A data frame containing variable details, typically loaded from a "variable-details" sheet.
+#' @param length integer. The desired length of the categorical variable vector.
+#' @param prop_NA numeric. Optional. The proportion of NA values to be introduced. If NULL, no NA values are introduced.
+#' @param seed integer. Optional. Seed for reproducibility. Default is 100.
+#' @return A data frame with one column representing the newly created categorical variable.
 #' @examples
-#' # Assuming 'variable_details' is a pre-defined dataframe
-#' # var_details_df <- data.frame(
-#' #   variable = c("VAR1", "VAR1", "VAR2"),
-#' #   databaseStart = c("CYC1", "CYC1", "CYC1"),
-#' #   variableStart = c("CYC1::VAR1_raw", "CYC1::VAR1_raw", "CYC1::VAR2_raw"),
-#' #   recStart = c("1", "2", "A"),
-#' #   recEnd = c("1", "2", "A")
-#' # )
-#' # create_cat_var("VAR1", "CYC1", var_details_df, 10)
-#' # create_cat_var("VAR1", "CYC1", var_details_df, 10, has_NA = TRUE)
-#'
-#' @importFrom stringr str_detect str_split str_extract_all
-#' @importFrom stats runif
+#' # Assuming 'variable_details' is loaded
+#' # create_cat_var("gender", "HC1", variable_details, 100)
+#' # create_cat_var("race", "HC1", variable_details, 100, prop_NA = 0.1)
 
-create_cat_var <- function(var, cycle, variable_details, length, has_NA = FALSE, seed = 100) {
+create_cat_var <- function(var, cycle, variable_details, length, prop_NA = NULL, seed = 100) {
     # related rows in variable_details
     var_details <- variable_details[variable_details$variable == var & str_detect(variable_details$variableStart, cycle),]
 
@@ -64,13 +44,23 @@ create_cat_var <- function(var, cycle, variable_details, length, has_NA = FALSE,
         }
 
         # create mock variable
-        if (has_NA) labels <- c(labels, NA_labels)
-        set.seed(seed)
-        col <- data.frame(new = sample(labels, length, replace = T)) 
-        names(col)[1] <- var_raw
+        if (is.null(prop_NA)) {
+            set.seed(seed)
+            col <- data.frame(new = sample(labels, length, replace = T)) 
+        } else { # optional: add NA levels
+            set.seed(seed)
+            vec <- sample(labels, length * (1-prop_NA), replace = T)
+            set.seed(seed)
+            vec.na <- sample(NA_labels, length * prop_NA, replace = T)
 
+            vec <- sample(c(vec, vec.na)) # combine and randomly sorted
+            col <- data.frame(new = c(vec, vec.na))[1:length] 
+        }
+        names(col)[1] <- var_raw
+        
         return(col)
     }
 }
+
 
 
